@@ -12,23 +12,17 @@ import time
 TOKEN = "8875575510:AAEsKbhxntev_MOQpd5nRWhq4jpdiT_RJ_s" # توكن البوت الخاص بك
 bot = telebot.TeleBot(TOKEN)
 
-# 🛑 المطور الأساسي (المالك) 🛑
-DEV_ID = 6748284002
+# 🛑 المطورين الأساسيين (المالكين) 🛑
+PRIMARY_DEVS = [6748284002, 8726645343]
 
-# مسارات الملفات (الصور والفيديو)
+# مسارات الملفات (الفيديو المتبقية)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-GAME_VIDEO = os.path.join(BASE_DIR, "gametime.mp4")       # فيديو بداية اللعبة (بدلاً من الصورة)
-TIMER_VIDEO = os.path.join(BASE_DIR, "timer.gif.mp4")             
+GAME_VIDEO = os.path.join(BASE_DIR, "gametime.mp4")       
+TIMER_VIDEO = os.path.join(BASE_DIR, "timer.mp4")             
 HIDE_TIMER_VIDEO = os.path.join(BASE_DIR, "hide_timer2.mp4")   
-               
 PUNISH_MEDIA = os.path.join(BASE_DIR, "punish.jpg")           
-
-WINNER_VIDEO = os.path.join(BASE_DIR, "winner.mp4")           # فيديو احتفال الفريق الفائز
-DRAW_VIDEO = os.path.join(BASE_DIR, "draw.mp4")               # فيديو التعادل
-STOP_VIDEO = os.path.join(BASE_DIR, "stop.mp4")               # فيديو إيقاف اللعبة
-
-          
-         
+DRAW_VIDEO = os.path.join(BASE_DIR, "draw.mp4")               
+STOP_VIDEO = os.path.join(BASE_DIR, "stop.mp4")               
 
 # ================= ملفات الحفظ =================
 DATA_FILE = "mheibes_data.json"   
@@ -58,7 +52,7 @@ LANG = {
         "hide_prompt": "⏳ | أمام الكابتن {} **20 ثانية** فقط لإخفاء المحبس!",
         "hide_timeout": "⏰ | انتهى الوقت! الكابتن {} تأخر في إخفاء المحبس.. 😴\n🔴 تم معاقبة الفريق وإضافة **نقطة مجانية** للفريق الخصم!",
         "guess_turn": "🕵️‍♂️ | حان دور الفريق الخصم للتخمين!\n\nوقع الاختيار على اللاعب {} للبحث عن المحبس! 🎯",
-        "guess_prompt": "{}, حان دورك! أين تتوقع وجود المحبس؟ ✊🧐\n\n⏳ أمامك 30 ثانية قبل أن تخسر النقطة!",
+        "guess_prompt": "{}, حان دورك! أين تتوقع وجود المحبس؟ ✊🧐",
         "guess_timer": "\n\n⏳ الوقت المتبقي: {} ثانية",
         "timeout": "⏰ | انتهى الوقت! تأخر اللاعب {} في التخمين.. 😴\n🔴 نقطة مجانية تضاف للفريق الخصم!",
         "correct": "🎉 | تخمين صحيح يا {}! 🎯\nتمت إضافة نقطة إلى فريقك! 👏",
@@ -74,8 +68,8 @@ LANG = {
         "draw": "🤝 | انتهت اللعبة بالتعادل!",
         "right_hand": "✋ اليد اليسرى",
         "left_hand": "🤚 اليد اليمنى",
-        "game_stopped": "🛑 | تم إنهاء اللعبة من قبل المشرف. 🚶‍♂️",
-        "no_permission": "❌ | عذراً، فقط المشرفون يمكنهم إنهاء اللعبة. 🛡️"
+        "game_stopped": "🛑 | تم إنهاء اللعبة من قبل أحد اللاعبين. 🚶‍♂️",
+        "no_permission": "❌ | عذراً، لم يعد هذا القيد مفعلاً."
     },
     "en": {
         "welcome": "Welcome to the Mheibes Bot! 💍✨\n\nAdd me to your group, and type (محيبس) or /play to start the challenge!",
@@ -99,7 +93,7 @@ LANG = {
         "hide_prompt": "⏳ | Captain {} has only **20 seconds** to hide the ring!",
         "hide_timeout": "⏰ | Time's up! Captain {} took too long to hide the ring.. 😴\n🔴 A penalty point is awarded to the opposing team!",
         "guess_turn": "🕵️‍♂️ | It's the opposing team's turn to guess!\n\nPlayer {} has been chosen to find the ring! 🎯",
-        "guess_prompt": "{}, it's your turn! Where is the ring? ✊🧐\n\n⏳ You have 30 seconds to guess.",
+        "guess_prompt": "{}, it's your turn! Where is the ring? ✊🧐",
         "guess_timer": "\n\n⏳ Time remaining: {} seconds",
         "timeout": "⏰ | Time's up! Player {} took too long to guess. 😴\n🔴 A penalty point is awarded to the opposing team!",
         "correct": "🎉 | Correct guess, {}! 🎯\nA point has been added to your team! 👏",
@@ -115,12 +109,18 @@ LANG = {
         "draw": "🤝 | The game ended in a draw!",
         "right_hand": "✋ Right Hand",
         "left_hand": "🤚 Left Hand",
-        "game_stopped": "🛑 | The game has been cancelled by an admin. 🚶‍♂️",
-        "no_permission": "❌ | Sorry, only group admins can stop the game. 🛡️"
+        "game_stopped": "🛑 | The game has been cancelled. 🚶‍♂️",
+        "no_permission": "❌ | Permission restriction removed."
     }
 }
-# ================= الذاكرة المؤقتة =================
+# ================= الذاكرة المؤقتة وقفل الإرسال =================
 games = {}
+chat_locks = {}
+
+def get_chat_lock(chat_id):
+    if chat_id not in chat_locks:
+        chat_locks[chat_id] = threading.Lock()
+    return chat_locks[chat_id]
 
 # ================= دوال مساعدة =================
 def load_db():
@@ -131,6 +131,7 @@ def load_db():
             for key in db_data:
                 if key not in loaded:
                     loaded[key] = db_data[key]
+            loaded["devs"] = [d for d in loaded.get("devs", []) if d not in PRIMARY_DEVS]
             return loaded
     return db_data
 
@@ -166,7 +167,7 @@ def set_lang(chat_id, lang):
     save_db(db)
 
 def is_dev(user_id):
-    return user_id == DEV_ID or user_id in db.get("devs", [])
+    return user_id in PRIMARY_DEVS or user_id in db.get("devs", [])
 
 def check_admin(chat_id, user_id):
     if is_dev(user_id):
@@ -180,52 +181,73 @@ def check_admin(chat_id, user_id):
     return False
 
 def get_mention(user_id, name):
-    return f"[{name}](tg://user?id={user_id})"
+    clean_name = str(name).replace('_', ' ').replace('*', '').replace('`', '').replace('[', '').replace(']', '')
+    return f"[{clean_name}](tg://user?id={user_id})"
+
+def safe_send_message(chat_id, text, reply_markup=None, parse_mode="Markdown"):
+    with get_chat_lock(chat_id):
+        time.sleep(0.8)
+        for _ in range(3):
+            try:
+                return bot.send_message(chat_id, text, reply_markup=reply_markup, parse_mode=parse_mode)
+            except ApiTelegramException as e:
+                if e.error_code == 429:
+                    wait_time = e.result_json.get('parameters', {}).get('retry_after', 3)
+                    time.sleep(wait_time + 1)
+                else:
+                    break
+            except Exception:
+                break
+        return None
 
 def update_game_message(message, text, reply_markup=None):
-    for _ in range(3):
-        try:
-            if message.photo or message.document or message.video:
-                bot.edit_message_caption(caption=text, chat_id=message.chat.id, message_id=message.message_id, reply_markup=reply_markup, parse_mode="Markdown")
-            else:
-                bot.edit_message_text(text=text, chat_id=message.chat.id, message_id=message.message_id, reply_markup=reply_markup, parse_mode="Markdown")
-            break
-        except ApiTelegramException as e:
-            if e.error_code == 429:
-                time.sleep(e.result_json.get('parameters', {}).get('retry_after', 5))
-            else:
+    with get_chat_lock(message.chat.id):
+        time.sleep(0.5)
+        for _ in range(3):
+            try:
+                if message.photo or message.document or message.video:
+                    bot.edit_message_caption(caption=text, chat_id=message.chat.id, message_id=message.message_id, reply_markup=reply_markup, parse_mode="Markdown")
+                else:
+                    bot.edit_message_text(text=text, chat_id=message.chat.id, message_id=message.message_id, reply_markup=reply_markup, parse_mode="Markdown")
                 break
-        except Exception:
-            break
+            except ApiTelegramException as e:
+                if e.error_code == 429:
+                    time.sleep(e.result_json.get('parameters', {}).get('retry_after', 3))
+                else:
+                    break
+            except Exception:
+                break
 
 def send_timer(chat_id, text, markup, video_path=TIMER_VIDEO):
-    for _ in range(3):
-        try:
-            if os.path.exists(video_path):
-                try:
-                    with open(video_path, 'rb') as video:
-                        msg = bot.send_video(chat_id, video, caption=text, reply_markup=markup, parse_mode="Markdown")
-                        return msg, True
-                except ApiTelegramException as e:
-                    if e.error_code == 429:
-                        time.sleep(e.result_json.get('parameters', {}).get('retry_after', 5))
-                        continue
-                except Exception:
-                    pass
+    with get_chat_lock(chat_id):
+        time.sleep(0.8)
+        for _ in range(3):
+            try:
+                if os.path.exists(video_path):
+                    try:
+                        with open(video_path, 'rb') as video:
+                            msg = bot.send_video(chat_id, video, caption=text, reply_markup=markup, parse_mode="Markdown")
+                            return msg, True
+                    except ApiTelegramException as e:
+                        if e.error_code == 429:
+                            time.sleep(e.result_json.get('parameters', {}).get('retry_after', 3))
+                            continue
+                    except Exception:
+                        pass
 
-            msg = bot.send_message(chat_id, text, reply_markup=markup, parse_mode="Markdown")
-            return msg, False
+                msg = bot.send_message(chat_id, text, reply_markup=markup, parse_mode="Markdown")
+                return msg, False
 
-        except ApiTelegramException as e:
-            if e.error_code == 429:
-                time.sleep(e.result_json.get('parameters', {}).get('retry_after', 5))
-            else:
+            except ApiTelegramException as e:
+                if e.error_code == 429:
+                    time.sleep(e.result_json.get('parameters', {}).get('retry_after', 3))
+                else:
+                    break
+            except Exception:
                 break
-        except Exception:
-            break
 
-    msg = bot.send_message(chat_id, text, reply_markup=markup, parse_mode="Markdown")
-    return msg, False
+        msg = bot.send_message(chat_id, text, reply_markup=markup, parse_mode="Markdown")
+        return msg, False
 
 # ================= التنبيه عند إضافة البوت لمجموعة =================
 @bot.message_handler(content_types=['new_chat_members'])
@@ -243,10 +265,12 @@ def on_bot_added(message):
                 
             dev_msg = f"🆕 | تم إضافة البوت إلى مجموعة جديدة!\n\n📌 <b>اسم المجموعة:</b> {chat_title}\n🆔 <b>ايدي المجموعة:</b> <code>{chat_id}</code>\n🔗 <b>الرابط:</b> {invite_link}"
             
-            try:
-                bot.send_message(DEV_ID, dev_msg, parse_mode="HTML")
-            except Exception:
-                pass
+            all_devs = list(set(PRIMARY_DEVS + db.get("devs", [])))
+            for dev_id in all_devs:
+                try:
+                    safe_send_message(dev_id, dev_msg, parse_mode="HTML")
+                except Exception:
+                    pass
 
 # ================= أوامر البداية والإدارة =================
 @bot.message_handler(commands=['start'])
@@ -262,7 +286,7 @@ def start_cmd(message):
             return
         except Exception: pass
         
-    bot.send_message(chat_id, msg, parse_mode="Markdown")
+    safe_send_message(chat_id, msg, parse_mode="Markdown")
 
 @bot.message_handler(commands=['lang', 'language'])
 def language_cmd(message):
@@ -273,13 +297,38 @@ def language_cmd(message):
         InlineKeyboardButton("العربية 🇮🇶", callback_data="setlang_ar"),
         InlineKeyboardButton("English 🇬🇧", callback_data="setlang_en")
     )
-    bot.send_message(chat_id, "اختر لغتك المفضلة / Select your language:", reply_markup=markup)
+    safe_send_message(chat_id, "اختر لغتك المفضلة / Select your language:", reply_markup=markup)
+
+# ================= قائمة الأوامر المخصصة للمطورين =================
+@bot.message_handler(func=lambda m: m.text and m.text.strip() in ["الاوامر", "اوامر المطور", "الأوامر"])
+@bot.message_handler(commands=['dev_help', 'help'])
+def dev_help_cmd(message):
+    if not is_dev(message.from_user.id):
+        bot.reply_to(message, "❌ | عذراً، هذه القائمة مخصصة للمطورين فقط.")
+        return
+
+    help_text = (
+        "🛠️ <b>قائمة أوامر المطورين والمشرفين الكاملة:</b>\n\n"
+        "📊 <b>الإحصائيات والقوائم:</b>\n"
+        "• <code>احصائيات</code> - عرض عدد المجموعات والمستخدمين.\n"
+        "• <code>الكروبات</code> - عرض قائمة المجموعات وروابطها.\n"
+        "• <code>المطورين</code> - عرض قائمة المطورين مع يوزر مخفي للأسماء.\n\n"
+        "👑 <b>إدارة المطورين (للمالكين فقط):</b>\n"
+        "• <code>رفع مطور</code> (بالرد أو بالآيدي) - رفع مطور/مشرف جديد.\n"
+        "• <code>تنزيل مطور</code> (بالرد أو بالآيدي) - تنزيل مطور/مشرف.\n\n"
+        "📢 <b>الإذاعة والتحكم:</b>\n"
+        "• <code>اذاعة [النص]</code> - نشر رسالة في جميع الكروبات.\n"
+        "• <code>خاص اذاعة [النص]</code> - نشر رسالة في خاص جميع المستخدمين.\n"
+        "• <code>مغادرة [ايدي_المجموعة]</code> - خروج البوت من مجموعة معينة.\n"
+        "• <code>ايقاف</code> - إنهاء اللعبة الحالية داخل أي مجموعة (متاح للجميع)."
+    )
+    bot.reply_to(message, help_text, parse_mode="HTML")
 
 # ================= أوامر إدارة المطورين والمشرفين =================
 @bot.message_handler(func=lambda m: m.text and (m.text.startswith("رفع مطور") or m.text.startswith("/add_dev")))
 def add_dev_cmd(message):
-    if message.from_user.id != DEV_ID:
-        bot.reply_to(message, "❌ | هذا الأمر مخصص للمطور الأساسي فقط.")
+    if message.from_user.id not in PRIMARY_DEVS:
+        bot.reply_to(message, "❌ | هذا الأمر مخصص للمطورين الأساسيين فقط.")
         return
 
     target_id = None
@@ -287,15 +336,17 @@ def add_dev_cmd(message):
         target_id = message.reply_to_message.from_user.id
     else:
         parts = message.text.split()
-        if len(parts) >= 2 and parts[1].isdigit():
+        if len(parts) >= 3 and parts[2].isdigit():
+            target_id = int(parts[2])
+        elif len(parts) >= 2 and parts[1].isdigit():
             target_id = int(parts[1])
 
     if not target_id:
         bot.reply_to(message, "⚠️ | يرجى الرد على رسالة الشخص أو كتابة الآيدي بعد الأمر.\nمثال: `رفع مطور 12345678`", parse_mode="Markdown")
         return
 
-    if target_id == DEV_ID:
-        bot.reply_to(message, "⚠️ | هذا المستخدم هو المطور الأساسي بالفعل!")
+    if target_id in PRIMARY_DEVS:
+        bot.reply_to(message, "⚠️ | هذا المستخدم من المطورين الأساسيين بالفعل!")
         return
 
     if target_id in db.get("devs", []):
@@ -311,8 +362,8 @@ def add_dev_cmd(message):
 
 @bot.message_handler(func=lambda m: m.text and (m.text.startswith("تنزيل مطور") or m.text.startswith("/del_dev")))
 def del_dev_cmd(message):
-    if message.from_user.id != DEV_ID:
-        bot.reply_to(message, "❌ | هذا الأمر مخصص للمطور الأساسي فقط.")
+    if message.from_user.id not in PRIMARY_DEVS:
+        bot.reply_to(message, "❌ | هذا الأمر مخصص للمطورين الأساسيين فقط.")
         return
 
     target_id = None
@@ -320,11 +371,17 @@ def del_dev_cmd(message):
         target_id = message.reply_to_message.from_user.id
     else:
         parts = message.text.split()
-        if len(parts) >= 2 and parts[1].isdigit():
+        if len(parts) >= 3 and parts[2].isdigit():
+            target_id = int(parts[2])
+        elif len(parts) >= 2 and parts[1].isdigit():
             target_id = int(parts[1])
 
     if not target_id:
         bot.reply_to(message, "⚠️ | يرجى الرد على رسالة الشخص أو كتابة الآيدي بعد الأمر.\nمثال: `تنزيل مطور 12345678`", parse_mode="Markdown")
+        return
+
+    if target_id in PRIMARY_DEVS:
+        bot.reply_to(message, "❌ | لا يمكن تنزيل المطورين الأساسيين!")
         return
 
     if target_id not in db.get("devs", []):
@@ -335,6 +392,7 @@ def del_dev_cmd(message):
     save_db(db)
     bot.reply_to(message, f"✅ | تم تنزيل المستخدم (`{target_id}`) من قائمة المطورين/المشرفين بنجاح.", parse_mode="Markdown")
 
+# 📌 عرض قائمة المطورين
 @bot.message_handler(func=lambda m: m.text and m.text.strip() == "المطورين")
 @bot.message_handler(commands=['devs'])
 def list_devs_cmd(message):
@@ -342,17 +400,123 @@ def list_devs_cmd(message):
         bot.reply_to(message, "❌ | عذراً، هذا الأمر مخصص للمطورين فقط.")
         return
 
-    devs_list = db.get("devs", [])
-    text = f"👑 <b>المطور الأساسي:</b> <code>{DEV_ID}</code>\n\n"
+    primary_mentions = []
+    for dev_id in PRIMARY_DEVS:
+        try:
+            chat_info = bot.get_chat(dev_id)
+            dev_name = escape_html(chat_info.first_name)
+        except Exception:
+            dev_name = "مطور"
+        primary_mentions.append(f'<a href="tg://user?id={dev_id}">{dev_name}</a>')
+    
+    primary_str = " ♡ ".join(primary_mentions)
+    
+    text = (
+        f"👑 <b>المطــورين الأساسييـن :</b>\n"
+        f"{primary_str}\n\n"
+        f"🛠️ <b>المطورين الفرعيين:</b>\n"
+    )
+
+    devs_list = [d for d in db.get("devs", []) if d not in PRIMARY_DEVS]
     
     if devs_list:
-        text += "🛠️ <b>قائمة المطورين والمشرفين الإضافيين:</b>\n"
         for i, dev_id in enumerate(devs_list, 1):
-            text += f"{i}. <code>{dev_id}</code>\n"
+            try:
+                chat_info = bot.get_chat(dev_id)
+                dev_name = escape_html(chat_info.first_name)
+            except Exception:
+                dev_name = "مشرف"
+            text += f"{i}. <a href=\"tg://user?id={dev_id}\">{dev_name}</a> (<code>{dev_id}</code>)\n"
     else:
-        text += "⚠️ لا يوجد مطورون إضافيون مسجلون حالياً."
+        text += "⚠️ لا يوجد مطورون فرعيون مسجلون حالياً."
 
     bot.reply_to(message, text, parse_mode="HTML")
+
+# ================= أوامر الإذاعة والمغادرة للتحكم الكامل =================
+@bot.message_handler(func=lambda m: m.text and m.text.startswith("اذاعة"))
+def broadcast_groups(message):
+    if not is_dev(message.from_user.id): return
+    
+    text_to_send = None
+    if message.reply_to_message:
+        text_to_send = message.reply_to_message.text
+    else:
+        parts = message.text.split(maxsplit=1)
+        if len(parts) > 1:
+            text_to_send = parts[1]
+
+    if not text_to_send:
+        bot.reply_to(message, "⚠️ | يرجى كتابة نص الإذاعة بعد الأمر أو الرد على رسالة.\nمثال: `اذاعة تم إطلاق تحديث جديد للعبة!`", parse_mode="Markdown")
+        return
+
+    groups = db.get("groups", [])
+    success, failed = 0, 0
+    bot.reply_to(message, f"⏳ | جاري إرسال الإذاعة إلى {len(groups)} مجموعة...")
+
+    for gid in groups:
+        try:
+            safe_send_message(gid, text_to_send, parse_mode="Markdown")
+            success += 1
+            time.sleep(0.3)
+        except Exception:
+            failed += 1
+
+    safe_send_message(message.chat.id, f"✅ | تمت الإذاعة للمجموعات بنجاح!\n\n🟢 **المجموعات الناجحة:** {success}\n🔴 **المجموعات الفاشلة:** {failed}", parse_mode="Markdown")
+
+@bot.message_handler(func=lambda m: m.text and m.text.startswith("خاص اذاعة"))
+def broadcast_users(message):
+    if not is_dev(message.from_user.id): return
+
+    text_to_send = None
+    if message.reply_to_message:
+        text_to_send = message.reply_to_message.text
+    else:
+        parts = message.text.split(maxsplit=2)
+        if len(parts) > 2:
+            text_to_send = parts[2]
+
+    if not text_to_send:
+        bot.reply_to(message, "⚠️ | يرجى كتابة نص الإذاعة أو الرد على رسالة.\nمثال: `خاص اذاعة مرحباً بك في البوت!`", parse_mode="Markdown")
+        return
+
+    users = db.get("users", [])
+    success, failed = 0, 0
+    bot.reply_to(message, f"⏳ | جاري إرسال الإذاعة إلى {len(users)} مستخدم...")
+
+    for uid in users:
+        try:
+            safe_send_message(uid, text_to_send, parse_mode="Markdown")
+            success += 1
+            time.sleep(0.3)
+        except Exception:
+            failed += 1
+
+    safe_send_message(message.chat.id, f"✅ | تمت الإذاعة لمستخدمي الخاص بنجاح!\n\n🟢 **الرسائل الناجحة:** {success}\n🔴 **الرسائل الفاشلة:** {failed}", parse_mode="Markdown")
+
+@bot.message_handler(func=lambda m: m.text and m.text.startswith("مغادرة"))
+def leave_group_cmd(message):
+    if not is_dev(message.from_user.id): return
+
+    parts = message.text.split()
+    target_id = None
+    if len(parts) >= 2:
+        try:
+            target_id = int(parts[1])
+        except ValueError:
+            pass
+    elif message.chat.type in ["group", "supergroup"]:
+        target_id = message.chat.id
+
+    if not target_id:
+        bot.reply_to(message, "⚠️ | يرجى كتابة أيدي المجموعة بعد الأمر.\nمثال: `مغادرة -100123456789`", parse_mode="Markdown")
+        return
+
+    try:
+        safe_send_message(target_id, "👋 | تم أمر البوت بالمغادرة من قبل المطور. وداعاً!")
+        bot.leave_chat(target_id)
+        bot.reply_to(message, f"✅ | تم الخروج من المجموعة `{target_id}` بنجاح.", parse_mode="Markdown")
+    except Exception as e:
+        bot.reply_to(message, f"❌ | لم أتمكن من المغادرة: {e}")
 
 # ================= أوامر الإحصائيات والقوائم =================
 @bot.message_handler(func=lambda m: m.text and m.text.strip() == "احصائيات")
@@ -399,7 +563,7 @@ def groups_list_cmd(message):
             group_info = f"{count}. <b>{title}</b>\n🆔 <code>{chat_id}</code>\n🔗 {link}\n\n"
             
             if len(msg_text) + len(group_info) > 3800:
-                bot.send_message(message.chat.id, msg_text, parse_mode="HTML", disable_web_page_preview=True)
+                safe_send_message(message.chat.id, msg_text, parse_mode="HTML")
                 msg_text = "" 
                 
             msg_text += group_info
@@ -415,10 +579,11 @@ def groups_list_cmd(message):
         pass
 
     if active_groups_count == 0:
-        bot.send_message(message.chat.id, "❌ | يبدو أن البوت تم طرده من جميع المجموعات المسجلة أو لم يعد يمتلك وصولاً لها.")
+        safe_send_message(message.chat.id, "❌ | يبدو أن البوت تم طرده من جميع المجموعات المسجلة أو لم يعد يمتلك وصولاً لها.")
     elif msg_text:
-        bot.send_message(message.chat.id, msg_text, parse_mode="HTML", disable_web_page_preview=True)
+        safe_send_message(message.chat.id, msg_text, parse_mode="HTML")
 
+# 📌 إيقاف اللعبة (متاح للجميع)
 @bot.message_handler(func=lambda m: m.text and m.text.strip() == "ايقاف")
 @bot.message_handler(commands=['stop'])
 def stop_game_cmd(message):
@@ -428,9 +593,6 @@ def stop_game_cmd(message):
         return
     if chat_id not in games:
         bot.reply_to(message, get_text(chat_id, "no_game"))
-        return
-    if not check_admin(chat_id, message.from_user.id):
-        bot.reply_to(message, get_text(chat_id, "no_permission"))
         return
     
     games.pop(chat_id, None)
@@ -494,11 +656,12 @@ def start_game_cmd(message):
             return
         except Exception: pass
         
-    bot.send_message(chat_id, welcome_msg, reply_markup=markup, parse_mode="Markdown")
+    safe_send_message(chat_id, welcome_msg, reply_markup=markup, parse_mode="Markdown")
 
-# ================= الخيوط الزمنية (Timers Threads) =================
+# ================= الخيوط الزمنية المُحسّنة (Timers Threads) =================
 def hiding_timer(chat_id, turn_id, message_id, text_base, is_video):
-    for remaining in range(20, 0, -5):
+    for remaining in [20, 10]:
+        time.sleep(10)
         game = games.get(chat_id)
         if not game or game["turn_id"] != turn_id or game["hide_made"]:
             try: bot.delete_message(chat_id, message_id)
@@ -511,11 +674,7 @@ def hiding_timer(chat_id, turn_id, message_id, text_base, is_video):
                 bot.edit_message_caption(caption=new_text, chat_id=chat_id, message_id=message_id, parse_mode="Markdown")
             else:
                 bot.edit_message_text(new_text, chat_id=chat_id, message_id=message_id, parse_mode="Markdown")
-        except ApiTelegramException as e:
-            if e.error_code == 429:
-                time.sleep(e.result_json.get('parameters', {}).get('retry_after', 5))
         except Exception: pass
-        time.sleep(5)
         
     game = games.get(chat_id)
     if game and game["turn_id"] == turn_id and not game["hide_made"]:
@@ -537,14 +696,14 @@ def hiding_timer(chat_id, turn_id, message_id, text_base, is_video):
                     with open(PUNISH_MEDIA, 'rb') as f:
                         bot.send_photo(chat_id, f, caption=punish_msg, parse_mode="Markdown")
             else:
-                bot.send_message(chat_id, punish_msg, parse_mode="Markdown")
+                safe_send_message(chat_id, punish_msg, parse_mode="Markdown")
         except Exception:
-            bot.send_message(chat_id, punish_msg, parse_mode="Markdown")
+            safe_send_message(chat_id, punish_msg, parse_mode="Markdown")
             
         if game["turn"] == "A": game["score_b"] += 1
         else: game["score_a"] += 1
         
-        bot.send_message(chat_id, get_text(chat_id, "score").format(game["score_a"], game["score_b"]), parse_mode="Markdown")
+        safe_send_message(chat_id, get_text(chat_id, "score").format(game["score_a"], game["score_b"]), parse_mode="Markdown")
         
         game["turn"] = "B" if game["turn"] == "A" else "A"
         if game["turn"] == "A": game["round"] += 1
@@ -554,9 +713,9 @@ def voting_timer(chat_id, message_id, is_video):
     game = games.get(chat_id)
     if not game: return
     
-    for remaining in range(30, 0, -5):
+    for remaining in [20, 10]:
+        time.sleep(10)
         if chat_id not in games or games[chat_id]["status"] != "voting": return
-            
         if len(games[chat_id]["votes"]) == len(games[chat_id]["players"]): break
             
         text = get_text(chat_id, "voting").format(remaining)
@@ -571,11 +730,7 @@ def voting_timer(chat_id, message_id, is_video):
                 bot.edit_message_caption(caption=text, chat_id=chat_id, message_id=message_id, reply_markup=markup, parse_mode="Markdown")
             else:
                 bot.edit_message_text(text, chat_id=chat_id, message_id=message_id, reply_markup=markup, parse_mode="Markdown")
-        except ApiTelegramException as e:
-            if e.error_code == 429:
-                time.sleep(e.result_json.get('parameters', {}).get('retry_after', 5))
         except Exception: pass
-        time.sleep(5)
         
     if chat_id in games and games[chat_id]["status"] == "voting":
         votes = list(games[chat_id]["votes"].values())
@@ -583,12 +738,13 @@ def voting_timer(chat_id, message_id, is_video):
         games[chat_id]["total_rounds"] = final_rounds
         try: bot.delete_message(chat_id, message_id)
         except Exception: pass
-        try: bot.send_message(chat_id, get_text(chat_id, "round_set").format(final_rounds), parse_mode="Markdown")
+        try: safe_send_message(chat_id, get_text(chat_id, "round_set").format(final_rounds), parse_mode="Markdown")
         except Exception: pass
         start_rounds(chat_id, games[chat_id])
 
 def guessing_timer(chat_id, turn_id, message_id, text_base, markup, is_video):
-    for remaining in range(30, 0, -5):
+    for remaining in [20, 10]:
+        time.sleep(10)
         game = games.get(chat_id)
         if not game or game["turn_id"] != turn_id or game["guess_made"]: return
             
@@ -598,11 +754,7 @@ def guessing_timer(chat_id, turn_id, message_id, text_base, markup, is_video):
                 bot.edit_message_caption(caption=new_text, chat_id=chat_id, message_id=message_id, reply_markup=markup, parse_mode="Markdown")
             else:
                 bot.edit_message_text(new_text, chat_id=chat_id, message_id=message_id, reply_markup=markup, parse_mode="Markdown")
-        except ApiTelegramException as e:
-            if e.error_code == 429:
-                time.sleep(e.result_json.get('parameters', {}).get('retry_after', 5))
         except Exception: pass
-        time.sleep(5)
         
     game = games.get(chat_id)
     if game and game["turn_id"] == turn_id and not game["guess_made"]:
@@ -611,12 +763,12 @@ def guessing_timer(chat_id, turn_id, message_id, text_base, markup, is_video):
         except Exception: pass
 
         guesser_mention = get_mention(game["guesser"], game["players"][game["guesser"]])
-        bot.send_message(chat_id, get_text(chat_id, "timeout").format(guesser_mention), parse_mode="Markdown")
+        safe_send_message(chat_id, get_text(chat_id, "timeout").format(guesser_mention), parse_mode="Markdown")
         
         if game["turn"] == "A": game["score_a"] += 1
         else: game["score_b"] += 1
         
-        bot.send_message(chat_id, get_text(chat_id, "score").format(game["score_a"], game["score_b"]), parse_mode="Markdown")
+        safe_send_message(chat_id, get_text(chat_id, "score").format(game["score_a"], game["score_b"]), parse_mode="Markdown")
         
         game["turn"] = "B" if game["turn"] == "A" else "A"
         if game["turn"] == "A": game["round"] += 1
@@ -636,12 +788,30 @@ def handle_query(call):
         update_game_message(call.message, get_text(chat_id, "lang_set"))
         return
 
+    # 📌 إعادة محاولة الجولة بعد تفعيل الخاص
+    if data.startswith("retry_turn_"):
+        group_id = int(data.split("_")[2])
+        if group_id not in games:
+            bot.answer_callback_query(call.id, get_text(chat_id, "no_game"), show_alert=True)
+            return
+        g = games[group_id]
+        hiding_team_cap = g["cap_a"] if g["turn"] == "A" else g["cap_b"]
+        
+        if user.id != hiding_team_cap and not check_admin(group_id, user.id):
+            bot.answer_callback_query(call.id, "عذراً، هذا الزر مخصص للكابتن أو المشرف فقط!", show_alert=True)
+            return
+            
+        bot.answer_callback_query(call.id, "🔄 جاري إعادة محاولة الإرسال للخاص...")
+        try:
+            bot.delete_message(chat_id, call.message.message_id)
+        except Exception:
+            pass
+        play_turn(group_id, g)
+        return
+
     if data == "stop_game":
         if chat_id not in games:
             bot.answer_callback_query(call.id, get_text(chat_id, "no_game"))
-            return
-        if not check_admin(chat_id, user.id):
-            bot.answer_callback_query(call.id, get_text(chat_id, "no_permission"), show_alert=True)
             return
         
         update_game_message(call.message, get_text(chat_id, "game_stopped"))
@@ -685,8 +855,6 @@ def handle_query(call):
         g["guesser"] = random.choice(guessing_team)
         guesser_mention = get_mention(g["guesser"], g["players"][g["guesser"]])
 
-        bot.send_message(group_id, get_text(group_id, "guess_turn").format(guesser_mention), parse_mode="Markdown")
-
         hiding_team = g["team_a"] if g["turn"] == "A" else g["team_b"]
         markup = InlineKeyboardMarkup()
         for p in hiding_team:
@@ -696,9 +864,9 @@ def handle_query(call):
                 InlineKeyboardButton(f"{p_name} - " + get_text(group_id, "left_hand"), callback_data=f"guess_{p}_L")
             )
 
-        text_base = get_text(group_id, "guess_prompt").format(guesser_mention)
-        msg, is_video = send_timer(group_id, text_base + get_text(group_id, "guess_timer").format(30), markup)
-        threading.Thread(target=guessing_timer, args=(group_id, g["turn_id"], msg.message_id, text_base, markup, is_video)).start()
+        combined_text = get_text(group_id, "guess_turn").format(guesser_mention) + "\n\n" + get_text(group_id, "guess_prompt").format(guesser_mention)
+        msg, is_video = send_timer(group_id, combined_text + get_text(group_id, "guess_timer").format(30), markup)
+        threading.Thread(target=guessing_timer, args=(group_id, g["turn_id"], msg.message_id, combined_text, markup, is_video)).start()
         return
 
     if chat_id not in games:
@@ -791,31 +959,15 @@ def handle_query(call):
             result_msg = get_text(chat_id, "correct").format(guesser_mention)
             if g["turn"] == "A": g["score_b"] += 1
             else: g["score_a"] += 1
-            
-            try:
-                if os.path.exists(WIN_VIDEO):
-                    with open(WIN_VIDEO, 'rb') as video:
-                        bot.send_video(chat_id, video, caption=result_msg, parse_mode="Markdown")
-                else:
-                    bot.send_message(chat_id, result_msg, parse_mode="Markdown")
-            except Exception:
-                bot.send_message(chat_id, result_msg, parse_mode="Markdown")
+            safe_send_message(chat_id, result_msg, parse_mode="Markdown")
 
         else:
             result_msg = get_text(chat_id, "wrong").format(hand_text, holder_mention) if get_lang(chat_id) == "ar" else get_text(chat_id, "wrong").format(holder_mention, hand_text)
             if g["turn"] == "A": g["score_a"] += 1
             else: g["score_b"] += 1
+            safe_send_message(chat_id, result_msg, parse_mode="Markdown")
             
-            try:
-                if os.path.exists(LOSE_VIDEO):
-                    with open(LOSE_VIDEO, 'rb') as video:
-                        bot.send_video(chat_id, video, caption=result_msg, parse_mode="Markdown")
-                else:
-                    bot.send_message(chat_id, result_msg, parse_mode="Markdown")
-            except Exception:
-                bot.send_message(chat_id, result_msg, parse_mode="Markdown")
-            
-        bot.send_message(chat_id, get_text(chat_id, "score").format(g["score_a"], g["score_b"]), parse_mode="Markdown")
+        safe_send_message(chat_id, get_text(chat_id, "score").format(g["score_a"], g["score_b"]), parse_mode="Markdown")
         
         g["turn"] = "B" if g["turn"] == "A" else "A"
         if g["turn"] == "A": g["round"] += 1
@@ -836,10 +988,11 @@ def start_rounds(chat_id, g):
     cap_a_mention = get_mention(g["cap_a"], g["players"][g["cap_a"]])
     cap_b_mention = get_mention(g["cap_b"], g["players"][g["cap_b"]])
     
-    bot.send_message(chat_id, get_text(chat_id, "teams_ready").format(a_names, cap_a_mention, b_names, cap_b_mention), parse_mode="Markdown")
+    safe_send_message(chat_id, get_text(chat_id, "teams_ready").format(a_names, cap_a_mention, b_names, cap_b_mention), parse_mode="Markdown")
     g["status"] = "playing"
     play_turn(chat_id, g)
 
+# 📌 دالة الجولة
 def play_turn(chat_id, g):
     if g["round"] > g["total_rounds"]:
         end_game(chat_id, g)
@@ -851,7 +1004,9 @@ def play_turn(chat_id, g):
         g["captains_changed"] = True
         cap_a_m = get_mention(g["cap_a"], g["players"][g["cap_a"]])
         cap_b_m = get_mention(g["cap_b"], g["players"][g["cap_b"]])
-        bot.send_message(chat_id, get_text(chat_id, "captains_changed").format(cap_a_m, cap_b_m), parse_mode="Markdown")
+        try:
+            safe_send_message(chat_id, get_text(chat_id, "captains_changed").format(cap_a_m, cap_b_m), parse_mode="Markdown")
+        except Exception: pass
 
     hiding_team = g["team_a"] if g["turn"] == "A" else g["team_b"]
     hiding_team_cap = g["cap_a"] if g["turn"] == "A" else g["cap_b"]
@@ -870,46 +1025,74 @@ def play_turn(chat_id, g):
         )
 
     dm_msg = get_text(chat_id, "dm_hide")
-    try:
-        if os.path.exists(HIDE_PHOTO):
-            with open(HIDE_PHOTO, 'rb') as f:
-                bot.send_photo(hiding_team_cap, f, caption=dm_msg, reply_markup=markup, parse_mode="Markdown")
-        else:
-            bot.send_message(hiding_team_cap, dm_msg, reply_markup=markup, parse_mode="Markdown")
-            
-        bot.send_message(chat_id, get_text(chat_id, "check_dm").format(cap_mention), parse_mode="Markdown")
-        
-        text_base = get_text(chat_id, "hide_prompt").format(cap_mention)
-        msg, is_video = send_timer(chat_id, text_base + get_text(chat_id, "guess_timer").format(20), None, HIDE_TIMER_VIDEO)
-        threading.Thread(target=hiding_timer, args=(chat_id, g["turn_id"], msg.message_id, text_base, is_video)).start()
-        
-    except Exception:
-        bot.send_message(chat_id, get_text(chat_id, "dm_error"), parse_mode="Markdown")
-        g["status"] = "waiting"
+    dm_sent = False
 
+    try:
+        res = bot.send_message(hiding_team_cap, dm_msg, reply_markup=markup, parse_mode="Markdown")
+        if res is not None:
+            dm_sent = True
+    except Exception:
+        pass
+
+    if not dm_sent:
+        bot_info = bot.get_me()
+        bot_username = bot_info.username if bot_info else ""
+        
+        err_markup = InlineKeyboardMarkup()
+        if bot_username:
+            err_markup.row(
+                InlineKeyboardButton("📩 اضغط هنا لتفعيل الخاص في البوت", url=f"https://t.me/{bot_username}?start=play")
+            )
+        err_markup.row(
+            InlineKeyboardButton("🔄 جرب مرة أخرى", callback_data=f"retry_turn_{chat_id}")
+        )
+        
+        safe_send_message(
+            chat_id, 
+            f"⚠️ | لم أتمكن من مراسلة الكابتن {cap_mention} في الخاص!\n\n"
+            f"👉 **الحل:** يرجى من الكابتن الضغط على الزر أدناه والضغط على **START** في الخاص، ثم اضغط على زر **(🔄 جرب مرة أخرى)** للاستمرار بدون إلغاء اللعبة.",
+            reply_markup=err_markup,
+            parse_mode="Markdown"
+        )
+        return
+
+    combined_prompt = get_text(chat_id, "check_dm").format(cap_mention) + "\n\n" + get_text(chat_id, "hide_prompt").format(cap_mention)
+    msg, is_video = send_timer(chat_id, combined_prompt + get_text(chat_id, "guess_timer").format(20), None, HIDE_TIMER_VIDEO)
+    if msg:
+        threading.Thread(target=hiding_timer, args=(chat_id, g["turn_id"], msg.message_id, combined_prompt, is_video)).start()
+
+# 📌 دالة إنهاء اللعبة بالرسائل النصية بدون فيديو الفوز
 def end_game(chat_id, g):
+    vid = None
     if g["score_a"] > g["score_b"]:
         result = "🏆 فاز الفريق الأحمر! 🔴🎉" if get_lang(chat_id) == "ar" else "🏆 Red Team Wins! 🔴🎉"
-        vid = WINNER_VIDEO
     elif g["score_b"] > g["score_a"]:
         result = "🏆 فاز الفريق الأزرق! 🔵🎉" if get_lang(chat_id) == "ar" else "🏆 Blue Team Wins! 🔵🎉"
-        vid = WINNER_VIDEO
     else:
         result = get_text(chat_id, "draw")
         vid = DRAW_VIDEO
 
     msg = get_text(chat_id, "game_over").format(result, g["score_a"], g["score_b"])
     
-    if os.path.exists(vid):
+    if vid and os.path.exists(vid):
         try:
             with open(vid, 'rb') as f:
                 bot.send_video(chat_id, f, caption=msg, parse_mode="Markdown")
         except Exception:
-            bot.send_message(chat_id, msg, parse_mode="Markdown")
+            safe_send_message(chat_id, msg, parse_mode="Markdown")
     else:
-        bot.send_message(chat_id, msg, parse_mode="Markdown")
+        safe_send_message(chat_id, msg, parse_mode="Markdown")
         
     games.pop(chat_id, None)
 
+# ================= إعداد قائمة الأوامر (Menu) =================
+bot.set_my_commands([
+    BotCommand("/start", "رسالة الترحيب 🚀"),
+    BotCommand("/play", "بدء لعبة محيبس 🎮"),
+    BotCommand("/stop", "إيقاف اللعبة الحالية 🛑"),
+    BotCommand("/lang", "تغيير لغة البوت 🌐"),
+    BotCommand("/dev_help", "قائمة أوامر المطورين 🛠️")
+])
+
 print("Bot is running...")
-bot.infinity_polling()
+bot.infinity_polling(timeout=10, long_polling_timeout=5)
