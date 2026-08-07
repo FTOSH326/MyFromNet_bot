@@ -20,15 +20,13 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 GAME_VIDEO = os.path.join(BASE_DIR, "gametime.mp4")       # فيديو بداية اللعبة (بدلاً من الصورة)
 TIMER_VIDEO = os.path.join(BASE_DIR, "timer.gif.mp4")             
 HIDE_TIMER_VIDEO = os.path.join(BASE_DIR, "hide_timer2.mp4")   
-WIN_VIDEO = os.path.join(BASE_DIR, "in.mp4")                 
-LOSE_VIDEO = os.path.join(BASE_DIR, "lse.mp4")               
+               
 PUNISH_MEDIA = os.path.join(BASE_DIR, "punish.jpg")           
 
 WINNER_VIDEO = os.path.join(BASE_DIR, "winer.mp4")           # فيديو احتفال الفريق الفائز
 DRAW_VIDEO = os.path.join(BASE_DIR, "draw.mp4")               # فيديو التعادل
 STOP_VIDEO = os.path.join(BASE_DIR, "stop.mp4")               # فيديو إيقاف اللعبة
-
-HIDE_PHOTO = os.path.join(BASE_DIR, "hie_photo.jpg")         # صورة خاصة للكابتن        
+      
 
 # ================= ملفات الحفظ =================
 DATA_FILE = "mheibes_data.json"   
