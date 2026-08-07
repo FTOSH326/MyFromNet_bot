@@ -17,10 +17,10 @@ PRIMARY_DEVS = [6748284002, 8726645343]
 
 # مسارات الملفات المتبقية
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-GAME_VIDEO = os.path.join(BASE_DIR, "gametime.mp4")       
+GAME_VIDEO = os.path.join(BASE_DIR, "Startplaying.mp4")       
 TIMER_VIDEO = os.path.join(BASE_DIR, "timer.mp4")             
-HIDE_TIMER_VIDEO = os.path.join(BASE_DIR, "hide_timer2.mp4")   
-PUNISH_MEDIA = os.path.join(BASE_DIR, "punish.jpg")           
+HIDE_TIMER_VIDEO = os.path.join(BASE_DIR, "hide_timer.mp4")   
+PUNISH_MEDIA = os.path.join(BASE_DIR, "punish.mp4")           
 DRAW_VIDEO = os.path.join(BASE_DIR, "draw.mp4")               
 STOP_VIDEO = os.path.join(BASE_DIR, "stop.mp4")               
 
@@ -244,7 +244,7 @@ def send_timer(chat_id, text, markup, video_path=TIMER_VIDEO):
 # ================= فحص الحظر العام =================
 @bot.message_handler(func=lambda m: is_banned(m.from_user.id))
 def handle_banned_user(message):
-    pass # المحظورون يتم تجاهل رسائلهم تماماً
+    pass
 
 # ================= الأوامر العامة والجديدة =================
 @bot.message_handler(commands=['start'])
@@ -262,7 +262,6 @@ def start_cmd(message):
         
     safe_send_message(chat_id, msg, parse_mode="Markdown")
 
-# 🆕 أمر البنج (سرعة البوت)
 @bot.message_handler(func=lambda m: m.text and m.text.strip() in ["بنج", "السرعة", "سرعة البوت"])
 @bot.message_handler(commands=['ping'])
 def ping_cmd(message):
@@ -272,7 +271,6 @@ def ping_cmd(message):
     ms = round((end_time - start_time) * 1000)
     bot.edit_message_text(f"⚡ **سرعة استجابة البوت:** `{ms}ms`", chat_id=message.chat.id, message_id=msg.message_id, parse_mode="Markdown")
 
-# 🆕 أمر القوانين والشرح
 @bot.message_handler(func=lambda m: m.text and m.text.strip() in ["الشرح", "القوانين", "التعليمات"])
 @bot.message_handler(commands=['rules', 'guide'])
 def rules_cmd(message):
@@ -289,6 +287,42 @@ def language_cmd(message):
         InlineKeyboardButton("English 🇬🇧", callback_data="setlang_en")
     )
     safe_send_message(chat_id, "اختر لغتك المفضلة / Select your language:", reply_markup=markup)
+
+# 📌 عرض قائمة المطورين بالتنسيق المطلوب تماماً ومتاحة للجميع
+@bot.message_handler(func=lambda m: m.text and m.text.strip() == "المطورين")
+@bot.message_handler(commands=['devs'])
+def list_devs_cmd(message):
+    primary_mentions = []
+    for dev_id in PRIMARY_DEVS:
+        try:
+            chat_info = bot.get_chat(dev_id)
+            dev_name = escape_html(chat_info.first_name)
+        except Exception:
+            dev_name = "مطور"
+        primary_mentions.append(f'<a href="tg://user?id={dev_id}">{dev_name}</a>')
+    
+    primary_str = "  ♡  ".join(primary_mentions)
+    
+    text = (
+        f"👑 <b>المطــورين الأساسييـن :</b>\n"
+        f"   {primary_str}\n\n"
+        f"🛠️ <b>المطورين الفرعيين:</b>\n"
+    )
+
+    devs_list = [d for d in db.get("devs", []) if d not in PRIMARY_DEVS]
+    
+    if devs_list:
+        for i, dev_id in enumerate(devs_list, 1):
+            try:
+                chat_info = bot.get_chat(dev_id)
+                dev_name = escape_html(chat_info.first_name)
+            except Exception:
+                dev_name = "مشرف"
+            text += f"{i}. <a href=\"tg://user?id={dev_id}\">{dev_name}</a> (<code>{dev_id}</code>)\n"
+    else:
+        text += "⚠️ لا يوجد مطورون فرعيون مسجلون حالياً."
+
+    bot.reply_to(message, text, parse_mode="HTML")
 
 # ================= أوامر المطورين والأوامر الجديدة =================
 @bot.message_handler(func=lambda m: m.text and m.text.strip() in ["الاوامر", "اوامر المطور", "الأوامر"])
@@ -321,7 +355,6 @@ def dev_help_cmd(message):
     )
     bot.reply_to(message, help_text, parse_mode="HTML")
 
-# 🆕 أمر حظر مستخدم
 @bot.message_handler(func=lambda m: m.text and m.text.startswith("حظر"))
 def ban_user_cmd(message):
     if not is_dev(message.from_user.id): return
@@ -347,7 +380,6 @@ def ban_user_cmd(message):
     else:
         bot.reply_to(message, "⚠️ | المستخدم محظور بالفعل.")
 
-# 🆕 أمر إلغاء حظر مستخدم
 @bot.message_handler(func=lambda m: m.text and (m.text.startswith("الغاء حظر") or m.text.startswith("إلغاء حظر")))
 def unban_user_cmd(message):
     if not is_dev(message.from_user.id): return
@@ -369,7 +401,6 @@ def unban_user_cmd(message):
     else:
         bot.reply_to(message, "⚠️ | المستخدم ليس في قائمة المحظورين.")
 
-# 🆕 أمر قائمة المحظورين
 @bot.message_handler(func=lambda m: m.text and m.text.strip() == "المحظورين")
 def list_banned_cmd(message):
     if not is_dev(message.from_user.id): return
@@ -380,7 +411,6 @@ def list_banned_cmd(message):
     text = "🚫 **قائمة المحظورين:**\n\n" + "\n".join([f"• `{uid}`" for uid in banned])
     bot.reply_to(message, text, parse_mode="Markdown")
 
-# 🆕 أمر تنظيف وتصفير البيانات للمطور
 @bot.message_handler(func=lambda m: m.text and m.text.strip() in ["تصفير البيانات", "تصفير الداتا"])
 def reset_db_cmd(message):
     if message.from_user.id not in PRIMARY_DEVS: return
@@ -425,18 +455,6 @@ def del_dev_cmd(message):
     db["devs"].remove(target_id)
     save_db(db)
     bot.reply_to(message, f"✅ | تم تنزيل المستخدم (`{target_id}`) من المطورين.", parse_mode="Markdown")
-
-@bot.message_handler(func=lambda m: m.text and m.text.strip() == "المطورين")
-@bot.message_handler(commands=['devs'])
-def list_devs_cmd(message):
-    if not is_dev(message.from_user.id): return
-    primary_mentions = [f'<a href="tg://user?id={d}">مطور</a>' for d in PRIMARY_DEVS]
-    text = f"👑 <b>المطــورين الأساسييـن :</b>\n" + " ♡ ".join(primary_mentions) + "\n\n🛠️ <b>المطورين الفرعيين:</b>\n"
-    devs_list = [d for d in db.get("devs", []) if d not in PRIMARY_DEVS]
-    if devs_list:
-        for i, dev_id in enumerate(devs_list, 1): text += f"{i}. <code>{dev_id}</code>\n"
-    else: text += "⚠️ لا يوجد مطورون فرعيون."
-    bot.reply_to(message, text, parse_mode="HTML")
 
 @bot.message_handler(func=lambda m: m.text and m.text.startswith("اذاعة"))
 def broadcast_groups(message):
