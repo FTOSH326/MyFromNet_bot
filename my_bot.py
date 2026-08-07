@@ -23,10 +23,12 @@ HIDE_TIMER_VIDEO = os.path.join(BASE_DIR, "hide_timer2.mp4")
                
 PUNISH_MEDIA = os.path.join(BASE_DIR, "punish.jpg")           
 
-WINNER_VIDEO = os.path.join(BASE_DIR, "winer.mp4")           # فيديو احتفال الفريق الفائز
+WINNER_VIDEO = os.path.join(BASE_DIR, "winner.mp4")           # فيديو احتفال الفريق الفائز
 DRAW_VIDEO = os.path.join(BASE_DIR, "draw.mp4")               # فيديو التعادل
 STOP_VIDEO = os.path.join(BASE_DIR, "stop.mp4")               # فيديو إيقاف اللعبة
-      
+
+          
+         
 
 # ================= ملفات الحفظ =================
 DATA_FILE = "mheibes_data.json"   
@@ -273,6 +275,86 @@ def language_cmd(message):
     )
     bot.send_message(chat_id, "اختر لغتك المفضلة / Select your language:", reply_markup=markup)
 
+# ================= أوامر إدارة المطورين والمشرفين =================
+@bot.message_handler(func=lambda m: m.text and (m.text.startswith("رفع مطور") or m.text.startswith("/add_dev")))
+def add_dev_cmd(message):
+    if message.from_user.id != DEV_ID:
+        bot.reply_to(message, "❌ | هذا الأمر مخصص للمطور الأساسي فقط.")
+        return
+
+    target_id = None
+    if message.reply_to_message:
+        target_id = message.reply_to_message.from_user.id
+    else:
+        parts = message.text.split()
+        if len(parts) >= 2 and parts[1].isdigit():
+            target_id = int(parts[1])
+
+    if not target_id:
+        bot.reply_to(message, "⚠️ | يرجى الرد على رسالة الشخص أو كتابة الآيدي بعد الأمر.\nمثال: `رفع مطور 12345678`", parse_mode="Markdown")
+        return
+
+    if target_id == DEV_ID:
+        bot.reply_to(message, "⚠️ | هذا المستخدم هو المطور الأساسي بالفعل!")
+        return
+
+    if target_id in db.get("devs", []):
+        bot.reply_to(message, "⚠️ | هذا المستخدم مطور/مشرف بالفعل في البوت!")
+        return
+
+    if "devs" not in db:
+        db["devs"] = []
+
+    db["devs"].append(target_id)
+    save_db(db)
+    bot.reply_to(message, f"✅ | تم رفع المستخدم (`{target_id}`) كمطور/مشرف في البوت بنجاح! 👑", parse_mode="Markdown")
+
+@bot.message_handler(func=lambda m: m.text and (m.text.startswith("تنزيل مطور") or m.text.startswith("/del_dev")))
+def del_dev_cmd(message):
+    if message.from_user.id != DEV_ID:
+        bot.reply_to(message, "❌ | هذا الأمر مخصص للمطور الأساسي فقط.")
+        return
+
+    target_id = None
+    if message.reply_to_message:
+        target_id = message.reply_to_message.from_user.id
+    else:
+        parts = message.text.split()
+        if len(parts) >= 2 and parts[1].isdigit():
+            target_id = int(parts[1])
+
+    if not target_id:
+        bot.reply_to(message, "⚠️ | يرجى الرد على رسالة الشخص أو كتابة الآيدي بعد الأمر.\nمثال: `تنزيل مطور 12345678`", parse_mode="Markdown")
+        return
+
+    if target_id not in db.get("devs", []):
+        bot.reply_to(message, "⚠️ | هذا المستخدم ليس مطوراً أو مشرفاً في البوت!")
+        return
+
+    db["devs"].remove(target_id)
+    save_db(db)
+    bot.reply_to(message, f"✅ | تم تنزيل المستخدم (`{target_id}`) من قائمة المطورين/المشرفين بنجاح.", parse_mode="Markdown")
+
+@bot.message_handler(func=lambda m: m.text and m.text.strip() == "المطورين")
+@bot.message_handler(commands=['devs'])
+def list_devs_cmd(message):
+    if not is_dev(message.from_user.id):
+        bot.reply_to(message, "❌ | عذراً، هذا الأمر مخصص للمطورين فقط.")
+        return
+
+    devs_list = db.get("devs", [])
+    text = f"👑 <b>المطور الأساسي:</b> <code>{DEV_ID}</code>\n\n"
+    
+    if devs_list:
+        text += "🛠️ <b>قائمة المطورين والمشرفين الإضافيين:</b>\n"
+        for i, dev_id in enumerate(devs_list, 1):
+            text += f"{i}. <code>{dev_id}</code>\n"
+    else:
+        text += "⚠️ لا يوجد مطورون إضافيون مسجلون حالياً."
+
+    bot.reply_to(message, text, parse_mode="HTML")
+
+# ================= أوامر الإحصائيات والقوائم =================
 @bot.message_handler(func=lambda m: m.text and m.text.strip() == "احصائيات")
 @bot.message_handler(commands=['stats'])
 def stats_cmd(message):
