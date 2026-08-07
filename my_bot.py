@@ -17,10 +17,10 @@ PRIMARY_DEVS = [6748284002, 8726645343]
 
 # مسارات الملفات المتبقية
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-GAME_VIDEO = os.path.join(BASE_DIR, "Startplaying.mp4")       
+GAME_VIDEO = os.path.join(BASE_DIR, "gametime.mp4")       
 TIMER_VIDEO = os.path.join(BASE_DIR, "timer.mp4")             
-HIDE_TIMER_VIDEO = os.path.join(BASE_DIR, "hide_timer.mp4")   
-PUNISH_MEDIA = os.path.join(BASE_DIR, "punish.mp4")           
+HIDE_TIMER_VIDEO = os.path.join(BASE_DIR, "hide_timer2.mp4")   
+PUNISH_MEDIA = os.path.join(BASE_DIR, "punish.jpg")           
 DRAW_VIDEO = os.path.join(BASE_DIR, "draw.mp4")               
 STOP_VIDEO = os.path.join(BASE_DIR, "stop.mp4")               
 
